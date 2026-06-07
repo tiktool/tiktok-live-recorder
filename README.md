@@ -25,7 +25,7 @@ Each SDK exposes the same shape: a `TikTokLiveRecorder` class + `tiktok-live-rec
 
 ```bash
 npm i -g tiktok-live-recorder
-tiktok-live-recorder streamer_username --api-key YOUR_KEY
+tiktok-live-recorder streamer_username
 ```
 
 Or programmatic:
@@ -33,7 +33,7 @@ Or programmatic:
 ```ts
 import { TikTokLiveRecorder } from 'tiktok-live-recorder';
 
-const rec = new TikTokLiveRecorder('streamer', { apiKey: process.env.TIKTOOL_API_KEY });
+const rec = new TikTokLiveRecorder('streamer');
 const { outFile, durationSec } = await rec.record({ maxDurationSec: 3600 });
 console.log(`Saved ${outFile} (${durationSec}s)`);
 ```
@@ -42,7 +42,7 @@ console.log(`Saved ${outFile} (${durationSec}s)`);
 
 ```bash
 pip install tiktok-live-recorder
-tiktok-live-recorder streamer_username --api-key YOUR_KEY
+tiktok-live-recorder streamer_username
 ```
 
 Or programmatic:
@@ -50,10 +50,12 @@ Or programmatic:
 ```python
 from tiktok_live_recorder import TikTokLiveRecorder
 
-rec = TikTokLiveRecorder('streamer', api_key='...')
+rec = TikTokLiveRecorder('streamer')
 out_file, duration = rec.record(max_duration_sec=3600)
 print(f'Saved {out_file} ({duration}s)')
 ```
+
+No key. No config. Just run it.
 
 ### One-click
 

@@ -34,7 +34,7 @@ pip install tiktok-live-recorder
 tiktok-live-recorder streamer_username
 ```
 
-No key required to get going. Drop `--api-key YOUR_KEY` (free at <https://tik.tools>) to lift the per-IP caps if you record more than a few clips per hour.
+No key. No config. Just run it.
 
 ```text
 tiktok-live-recorder <username> [options]
@@ -44,7 +44,6 @@ Options:
   -q, --quality <q>        origin | FULL_HD1 | HD1 | SD1 | SD2  (default: origin)
   -c, --container <ext>    mp4 | flv | ts | mkv  (default: mp4)
       --max <seconds>      Stop after N seconds
-      --api-key <key>      Use a tik.tools API key (optional)
   -v, --verbose            Print ffmpeg output
 ```
 
