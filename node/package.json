@@ -1,6 +1,6 @@
 {
     "name": "tiktok-live-recorder",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "TikTok LIVE stream recorder for Node.js. Capture any TikTok LIVE stream to MP4 with one command. HLS + FLV support, auto-rotate files, scheduled records, ffmpeg under the hood. 2026 edition.",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+from pathlib import Path
 from typing import Optional
 
 from .recorder import (
@@ -11,6 +13,30 @@ from .recorder import (
     StreamOfflineError,
     FfmpegMissingError,
 )
+
+CONFIG_DIR = Path.home() / ".tiktok-live-events"
+KEY_FILE = CONFIG_DIR / "api-key"
+
+
+def _load_stored_key() -> str:
+    try:
+        if KEY_FILE.exists():
+            return KEY_FILE.read_text(encoding="utf-8").strip()
+    except Exception:
+        pass
+    return ""
+
+
+def _save_key(key: str) -> None:
+    try:
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+        KEY_FILE.write_text(key, encoding="utf-8")
+        try:
+            os.chmod(KEY_FILE, 0o600)
+        except Exception:
+            pass
+    except Exception:
+        pass
 
 
 def _parse_args(argv: Optional[list[str]]) -> argparse.Namespace:
@@ -43,7 +69,11 @@ def _is_rate_limit(msg: str) -> bool:
 def main(argv: Optional[list[str]] = None) -> int:
     args = _parse_args(argv)
     username = args.username.lstrip("@").strip()
-    api_key = args.api_key or ""
+    api_key = args.api_key or _load_stored_key() or ""
+    if api_key and not args.api_key:
+        print(f"[recorder] using stored API key from {KEY_FILE}")
+    if args.api_key:
+        _save_key(args.api_key)
 
     while True:
         print(f"[recorder] resolving @{username} ...")
@@ -74,6 +104,8 @@ def main(argv: Optional[list[str]] = None) -> int:
                     print("[recorder] no key entered. Exiting.")
                     return 0
                 api_key = new_key
+                _save_key(new_key)
+                print(f"[recorder] API key saved to {KEY_FILE}")
                 continue
             print(f"[recorder] failed: {e}", file=sys.stderr)
             return 1
