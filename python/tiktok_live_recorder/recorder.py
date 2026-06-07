@@ -81,29 +81,34 @@ class TikTokLiveRecorder:
         if not self.unique_id:
             raise ValueError("unique_id is required.")
         self.endpoint = endpoint
+        # Anonymous mode is supported. Drop in a free key from
+        # https://tik.tools to lift the per-IP caps when you hit them.
         self.api_key = (api_key or os.environ.get("TIKTOOL_API_KEY") or "").strip()
-        if not self.api_key:
-            raise ValueError(
-                "Missing API key. Grab a free one in ~10s at https://tik.tools, then "
-                "pass it as TikTokLiveRecorder('user', api_key='...') or set the "
-                "TIKTOOL_API_KEY environment variable."
-            )
 
     # ── Resolution ────────────────────────────────────────────────
 
     def resolve(self) -> StreamSources:
         """Ask the TikTools edge for the user's current HLS / FLV URLs."""
         payload = json.dumps({"unique_id": self.unique_id}).encode("utf-8")
+        headers = {"content-type": "application/json"}
+        if self.api_key:
+            headers["x-api-key"] = self.api_key
         req = urllib.request.Request(
             self.endpoint,
             data=payload,
-            headers={"content-type": "application/json", "x-api-key": self.api_key},
+            headers=headers,
             method="POST",
         )
         try:
             with urllib.request.urlopen(req, timeout=15) as r:
                 body = json.loads(r.read())
         except urllib.error.HTTPError as e:
+            if e.code == 429:
+                try:
+                    err_body = json.loads(e.read())
+                    raise RuntimeError(err_body.get("error") or "Anonymous rate-limit reached. Grab a free API key in 10s at https://tik.tools.") from e
+                except (json.JSONDecodeError, AttributeError):
+                    pass
             raise RuntimeError(f"stream_url failed: HTTP {e.code}") from e
         except (urllib.error.URLError, OSError) as e:
             raise RuntimeError(f"stream_url unreachable: {e}") from e
