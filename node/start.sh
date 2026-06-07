@@ -20,11 +20,23 @@ if ! command -v ffmpeg >/dev/null 2>&1; then
     exit 1
 fi
 
-read -rp "Enter the TikTok username (without @): " USERNAME
-if [[ -z "${USERNAME}" ]]; then
+if [[ -t 0 ]]; then
+    read -rp "Enter the TikTok username (without @): " TTUSER
+else
+    # Piped from curl - read from controlling terminal.
+    if [[ -r /dev/tty ]]; then
+        printf 'Enter the TikTok username (without @): ' > /dev/tty
+        read -r TTUSER < /dev/tty
+    else
+        echo "[recorder] No TTY available. Run: tiktok-live-recorder <username>"
+        exit 1
+    fi
+fi
+
+if [[ -z "${TTUSER:-}" ]]; then
     echo "[recorder] No username entered. Exiting."
     exit 1
 fi
 
-echo "[recorder] starting record of @${USERNAME}  (Ctrl+C to stop)"
-tiktok-live-recorder "$USERNAME"
+echo "[recorder] starting record of @${TTUSER}  (Ctrl+C to stop)"
+tiktok-live-recorder "$TTUSER"
