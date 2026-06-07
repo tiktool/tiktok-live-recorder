@@ -1,0 +1,66 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tiktok-live-recorder"
+version = "1.0.0"
+description = "TikTok LIVE stream recorder for Python. Capture any TikTok LIVE stream to MP4 with one command. HLS + FLV support, scheduled records, ffmpeg under the hood. 2026 edition."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "TikTools" }]
+keywords = [
+    "tiktok",
+    "tiktok-live",
+    "tiktok-live-recorder",
+    "tiktok-recorder",
+    "tiktok-live-download",
+    "tiktok-live-capture",
+    "tiktok-live-archive",
+    "tiktok-stream-recorder",
+    "tiktok-stream-downloader",
+    "tiktok-live-python",
+    "tiktok-live-2026",
+    "tiktok-live-mp4",
+    "tiktok-live-flv",
+    "tiktok-live-hls",
+    "tiktok-live-m3u8",
+    "tiktok-live-save",
+    "tiktok-live-monitor",
+    "tiktok-clipper",
+    "live-recorder",
+    "live-stream-recorder",
+    "ffmpeg",
+    "real-time",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet",
+    "Topic :: Multimedia :: Video :: Capture",
+    "Topic :: Multimedia :: Video :: Conversion",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.scripts]
+tiktok-live-recorder = "tiktok_live_recorder.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/tiktool/tiktok-live-recorder"
+Documentation = "https://github.com/tiktool/tiktok-live-recorder#readme"
+Issues = "https://github.com/tiktool/tiktok-live-recorder/issues"
+Repository = "https://github.com/tiktool/tiktok-live-recorder"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tiktok_live_recorder"]

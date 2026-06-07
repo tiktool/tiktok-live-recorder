@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.mp4
+*.flv
+*.ts
+*.mkv
+*.log
+.env
+.DS_Store

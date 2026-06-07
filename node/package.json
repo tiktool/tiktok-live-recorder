@@ -1,0 +1,75 @@
+{
+    "name": "tiktok-live-recorder",
+    "version": "1.0.0",
+    "description": "TikTok LIVE stream recorder for Node.js. Capture any TikTok LIVE stream to MP4 with one command. HLS + FLV support, auto-rotate files, scheduled records, ffmpeg under the hood. 2026 edition.",
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "bin": {
+        "tiktok-live-recorder": "./dist/cli.js"
+    },
+    "exports": {
+        ".": {
+            "import": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.mjs"
+            },
+            "require": {
+                "types": "./dist/index.d.ts",
+                "default": "./dist/index.js"
+            }
+        }
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE",
+        "start.bat",
+        "start.sh"
+    ],
+    "scripts": {
+        "build": "tsup src/index.ts src/cli.ts --format cjs,esm --dts --clean",
+        "prepublishOnly": "npm run build"
+    },
+    "keywords": [
+        "tiktok",
+        "tiktok-live",
+        "tiktok-live-recorder",
+        "tiktok-recorder",
+        "tiktok-live-download",
+        "tiktok-live-capture",
+        "tiktok-live-archive",
+        "tiktok-stream-recorder",
+        "tiktok-stream-downloader",
+        "tiktok-live-2026",
+        "tiktok-live-mp4",
+        "tiktok-live-flv",
+        "tiktok-live-hls",
+        "tiktok-live-m3u8",
+        "tiktok-live-save",
+        "tiktok-live-monitor",
+        "tiktok-clipper",
+        "live-recorder",
+        "live-stream-recorder",
+        "ffmpeg",
+        "real-time"
+    ],
+    "author": "TikTools",
+    "license": "MIT",
+    "homepage": "https://github.com/tiktool/tiktok-live-recorder",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/tiktool/tiktok-live-recorder"
+    },
+    "bugs": {
+        "url": "https://github.com/tiktool/tiktok-live-recorder/issues"
+    },
+    "devDependencies": {
+        "@types/node": "^22.0.0",
+        "tsup": "^8.3.0",
+        "typescript": "^5.7.0"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}
