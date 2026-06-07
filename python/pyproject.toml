@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tiktok-live-recorder"
-version = "1.0.0"
+version = "1.0.1"
 description = "TikTok LIVE stream recorder for Python. Capture any TikTok LIVE stream to MP4 with one command. HLS + FLV support, scheduled records, ffmpeg under the hood. 2026 edition."
 readme = "README.md"
 requires-python = ">=3.9"

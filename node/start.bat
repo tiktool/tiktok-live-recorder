@@ -9,13 +9,10 @@ if errorlevel 1 (
     exit /b 1
 )
 
-where tiktok-live-recorder >nul 2>&1
+echo [recorder] Updating tiktok-live-recorder...
+call npm i -g tiktok-live-recorder@latest >nul 2>&1
 if errorlevel 1 (
-    echo [recorder] Installing tiktok-live-recorder globally...
-    call npm i -g tiktok-live-recorder
-    if errorlevel 1 (
-        echo [recorder] Global install failed. Falling back to npx.
-    )
+    echo [recorder] Global install failed. Will use npx.
 )
 
 where ffmpeg >nul 2>&1

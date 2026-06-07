@@ -29,41 +29,60 @@ def _parse_args(argv: Optional[list[str]]) -> argparse.Namespace:
     p.add_argument("--max", dest="max_seconds", type=int, default=None,
                    help="Stop recording after N seconds.")
     p.add_argument("--api-key", dest="api_key", default="",
-                   help="Optional tik.tools API key.")
+                   help=argparse.SUPPRESS)
     p.add_argument("-v", "--verbose", action="store_true",
                    help="Print ffmpeg output.")
     return p.parse_args(argv)
 
 
+def _is_rate_limit(msg: str) -> bool:
+    m = (msg or "").lower()
+    return "anonymous" in m or "rate-limit" in m or "rate limit" in m or "cap reached" in m
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     args = _parse_args(argv)
     username = args.username.lstrip("@").strip()
-    print(f"[recorder] resolving @{username} ...")
+    api_key = args.api_key or ""
 
-    rec = TikTokLiveRecorder(username, api_key=args.api_key)
-    try:
-        out_file, duration = rec.record(
-            out_file=args.out_file,
-            quality=args.quality,
-            container=args.container,
-            max_duration_sec=args.max_seconds,
-            verbose=args.verbose,
-            on_segment_start=lambda p: print(f"[recorder] recording -> {p}"),
-            on_segment_end=lambda p: print(f"[recorder] finalised {p}"),
-        )
-    except StreamOfflineError as e:
-        print(f"[recorder] @{e.unique_id} is not currently live.", file=sys.stderr)
-        return 2
-    except FfmpegMissingError:
-        print("[recorder] ffmpeg is missing. Install it from https://ffmpeg.org/download.html",
-              file=sys.stderr)
-        return 3
-    except Exception as e:
-        print(f"[recorder] failed: {e}", file=sys.stderr)
-        return 1
+    while True:
+        print(f"[recorder] resolving @{username} ...")
+        rec = TikTokLiveRecorder(username, api_key=api_key)
+        try:
+            out_file, duration = rec.record(
+                out_file=args.out_file,
+                quality=args.quality,
+                container=args.container,
+                max_duration_sec=args.max_seconds,
+                verbose=args.verbose,
+                on_segment_start=lambda p: print(f"[recorder] recording -> {p}"),
+                on_segment_end=lambda p: print(f"[recorder] finalised {p}"),
+            )
+        except StreamOfflineError as e:
+            print(f"[recorder] @{e.unique_id} is not currently live.", file=sys.stderr)
+            return 2
+        except FfmpegMissingError:
+            print("[recorder] ffmpeg is missing. Install it from https://ffmpeg.org/download.html",
+                  file=sys.stderr)
+            return 3
+        except RuntimeError as e:
+            if _is_rate_limit(str(e)):
+                print("")
+                print(f"[limit]   {e}", file=sys.stderr)
+                new_key = input("[recorder] Paste your API key (or press Enter to quit): ").strip()
+                if not new_key:
+                    print("[recorder] no key entered. Exiting.")
+                    return 0
+                api_key = new_key
+                continue
+            print(f"[recorder] failed: {e}", file=sys.stderr)
+            return 1
+        except Exception as e:  # noqa: BLE001
+            print(f"[recorder] failed: {e}", file=sys.stderr)
+            return 1
 
-    print(f"[recorder] done. duration {duration}s, file {out_file}")
-    return 0
+        print(f"[recorder] done. duration {duration}s, file {out_file}")
+        return 0
 
 
 if __name__ == "__main__":

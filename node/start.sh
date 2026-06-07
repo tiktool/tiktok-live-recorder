@@ -7,10 +7,8 @@ if ! command -v node >/dev/null 2>&1; then
     exit 1
 fi
 
-if ! command -v tiktok-live-recorder >/dev/null 2>&1; then
-    echo "[recorder] Installing tiktok-live-recorder globally..."
-    npm i -g tiktok-live-recorder
-fi
+echo "[recorder] Updating tiktok-live-recorder..."
+npm i -g tiktok-live-recorder@latest >/dev/null 2>&1 || echo "[recorder] global install failed - will use npx"
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
     echo "[recorder] ffmpeg is missing. Install it:"
