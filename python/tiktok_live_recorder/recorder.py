@@ -106,7 +106,7 @@ class TikTokLiveRecorder:
             if e.code == 429:
                 try:
                     err_body = json.loads(e.read())
-                    raise RuntimeError(err_body.get("error") or "Anonymous rate-limit reached. Grab a free API key in 10s at https://tik.tools.") from e
+                    raise RuntimeError(err_body.get("error") or "Rate-limit reached, retry shortly.") from e
                 except (json.JSONDecodeError, AttributeError):
                     pass
             raise RuntimeError(f"stream_url failed: HTTP {e.code}") from e
