@@ -1,13 +1,5 @@
 @echo off
 REM tiktok-live-recorder - Windows one-click launcher
-REM ------------------------------------------------------------------
-REM Drop this file next to a checkout of tiktok-live-recorder OR run it
-REM from anywhere with Node + npm on PATH. It will:
-REM   1. Verify Node is installed.
-REM   2. Install tiktok-live-recorder if missing (npm i -g).
-REM   3. Verify ffmpeg is installed; download a static build if missing.
-REM   4. Prompt for the username and start recording.
-
 setlocal enabledelayedexpansion
 
 where node >nul 2>&1
@@ -21,6 +13,9 @@ where tiktok-live-recorder >nul 2>&1
 if errorlevel 1 (
     echo [recorder] Installing tiktok-live-recorder globally...
     call npm i -g tiktok-live-recorder
+    if errorlevel 1 (
+        echo [recorder] Global install failed. Falling back to npx.
+    )
 )
 
 where ffmpeg >nul 2>&1
@@ -32,15 +27,20 @@ if errorlevel 1 (
     exit /b 1
 )
 
-set /p USERNAME=Enter the TikTok username (without @):
-if "!USERNAME!"=="" (
+set /p TTUSER=Enter the TikTok username (without @):
+if "!TTUSER!"=="" (
     echo [recorder] No username entered. Exiting.
     pause
     exit /b 1
 )
 
-echo [recorder] starting record of @!USERNAME!  (Ctrl+C to stop)
-tiktok-live-recorder !USERNAME!
+echo [recorder] starting record of @!TTUSER!  (Ctrl+C to stop)
+where tiktok-live-recorder >nul 2>&1
+if errorlevel 1 (
+    call npx -y tiktok-live-recorder !TTUSER!
+) else (
+    call tiktok-live-recorder !TTUSER!
+)
 
 echo.
 echo [recorder] done.
