@@ -11,7 +11,7 @@ if ! command -v "$PY" >/dev/null 2>&1; then
 fi
 
 echo "[recorder] Updating tiktok-live-recorder..."
-"$PY" -m pip install --user --upgrade tiktok-live-recorder >/dev/null 2>&1 || echo "[recorder] pip install failed - using existing if present"
+"$PY" -m pip install --user --upgrade --upgrade-strategy eager tiktok-live-recorder || echo "[recorder] pip install failed - using existing if present"
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
     echo "[recorder] ffmpeg is missing. Install it:"
