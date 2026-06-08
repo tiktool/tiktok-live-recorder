@@ -10,7 +10,7 @@ if errorlevel 1 (
 )
 
 echo [recorder] Updating tiktok-live-recorder...
-call npm i -g tiktok-live-recorder@latest >nul 2>&1
+call npm i -g tiktok-live-recorder@latest
 if errorlevel 1 (
     echo [recorder] Global install failed. Will use npx.
 )

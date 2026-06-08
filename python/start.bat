@@ -10,7 +10,7 @@ if errorlevel 1 (
 )
 
 echo [recorder] Updating tiktok-live-recorder...
-call python -m pip install --user --upgrade tiktok-live-recorder >nul 2>&1
+call python -m pip install --user --upgrade --upgrade-strategy eager tiktok-live-recorder
 if errorlevel 1 (
     echo [recorder] pip install failed. Continuing with existing install if present.
 )
