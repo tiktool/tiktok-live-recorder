@@ -100,7 +100,7 @@ All bandwidth flows directly from TikTok's CDN to your disk - none of it touches
 ## Pricing (USD)
 | Tier | Weekly | Monthly |
 |------|--------|---------|
-| Sandbox / Free | $0 | $0 |
+| Sandbox (7-day evaluation) | Free for 7 days | Free for 7 days |
 | Basic | $7 | $19 |
 | Pro | $15 | $49 |
 | Ultra | $45 | $149 |
@@ -109,7 +109,7 @@ All bandwidth flows directly from TikTok's CDN to your disk - none of it touches
 Full pricing + checkout: https://tik.tools/pricing
 
 ## Tiers
-Tier ladder (each includes everything below it): Sandbox -> Basic -> Pro -> Ultra -> Global Agency. Sandbox is free with reduced rate limits + masked identifiers on intelligence endpoints; paid tiers raise limits and unmask data. Outgoing webhooks need Basic+. The agency intelligence endpoints (gaming ranks, movers, eligible-creator finder, gifter intel) need Global Agency.
+Tier ladder (each includes everything below it): Sandbox -> Basic -> Pro -> Ultra -> Global Agency. Sandbox is a free 7-day evaluation (counted from account creation) with reduced rate limits (20 req/min, 5,000 req/day, 3 concurrent WS, 60 connects/hour, 2 hours per WebSocket connection) + masked identifiers on intelligence endpoints; after 7 days the key is refused (WebSocket close 4401, REST 403) until the account moves to Basic or higher; paid tiers raise limits and unmask data. Outgoing webhooks need Basic+. The agency intelligence endpoints (gaming ranks, movers, eligible-creator finder, gifter intel) need Global Agency.
 
 ## Endpoints and required tier
 | Endpoint | Min tier |
