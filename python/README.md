@@ -144,7 +144,7 @@ except FfmpegMissingError:
 
 ## Recipes
 
-### Watch + record (poll every 30s)
+### Watch + record
 
 ```python
 import time

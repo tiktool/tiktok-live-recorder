@@ -117,7 +117,7 @@ Tier ladder (each includes everything below it): Sandbox -> Basic -> Pro -> Ultr
 | POST /webcast/sign_url | Sandbox |
 | POST /webcast/sign_websocket | Sandbox |
 | GET /webcast/ws_credentials | Sandbox |
-| GET /webcast/fetch | Sandbox |
+| POST /webcast/fetch | Basic |
 | GET /webcast/room_id | Sandbox |
 | GET /webcast/room_info | Sandbox |
 | GET /webcast/room_video | Sandbox |
@@ -141,10 +141,9 @@ Tier ladder (each includes everything below it): Sandbox -> Basic -> Pro -> Ultr
 | GET /webcast/rate_limits | Sandbox |
 | POST /authentication/jwt | Sandbox |
 | GET /api/live/connect | Sandbox |
-| POST /chat-send | Basic |
 | GET/POST /api/webhooks | Basic |
 | POST /api/webhooks/{id}/test | Basic |
-| GET /ws/sweep | Basic |
+| POST /ws/sweep | Basic |
 | GET /webcast/feed | Pro |
 | POST /webcast/ranklist/regional | Pro |
 | GET /webcast/user_profile | Pro |

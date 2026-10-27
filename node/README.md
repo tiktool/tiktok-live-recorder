@@ -169,7 +169,7 @@ try {
 
 ## Recipes
 
-### Watch + record (poll every 30s, record automatically)
+### Watch + record
 
 ```ts
 import { TikTokLiveRecorder, StreamOfflineError } from 'tiktok-live-recorder';
@@ -230,7 +230,7 @@ spawn('ffmpeg', [
 ], { stdio: 'inherit' });
 ```
 
-More ready-to-run recipes in [`examples/`](examples/).
+More ready-to-run recipes in [`examples/`](https://github.com/tiktool/tiktok-live-recorder/tree/main/node/examples).
 
 ---
 
