@@ -7,7 +7,6 @@
 CLI + SDK. HLS + FLV input. Uses `ffmpeg` under the hood. Schedule, monitor, auto-archive. 2026 edition.
 
 [![npm](https://img.shields.io/npm/v/tiktok-live-recorder)](https://www.npmjs.com/package/tiktok-live-recorder)
-[![downloads](https://img.shields.io/npm/dm/tiktok-live-recorder)](https://www.npmjs.com/package/tiktok-live-recorder)
 [![license](https://img.shields.io/npm/l/tiktok-live-recorder)](LICENSE)
 
 </div>

@@ -7,7 +7,6 @@
 CLI + Python SDK. HLS + FLV input. Uses `ffmpeg` under the hood. Schedule, monitor, auto-archive. 2026 edition.
 
 [![pypi](https://img.shields.io/pypi/v/tiktok-live-recorder)](https://pypi.org/project/tiktok-live-recorder/)
-[![downloads](https://img.shields.io/pypi/dm/tiktok-live-recorder)](https://pypi.org/project/tiktok-live-recorder/)
 [![python](https://img.shields.io/pypi/pyversions/tiktok-live-recorder)](https://pypi.org/project/tiktok-live-recorder/)
 [![license](https://img.shields.io/pypi/l/tiktok-live-recorder)](LICENSE)
 
