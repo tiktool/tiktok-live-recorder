@@ -5,9 +5,9 @@
  * Usage:
  *   tiktok-live-recorder <username> [--out file.mp4] [--quality origin] [--max 3600] [--verbose]
  */
-import { TikTokLiveRecorder, StreamOfflineError, FfmpegMissingError, Quality, Container } from './index.js';
+import { TikTokLiveRecorder, StreamOfflineError, ApiKeyRejectedError, FfmpegMissingError, Quality, Container } from './index.js';
 import * as readline from 'readline';
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
 
@@ -28,12 +28,19 @@ function saveKey(key: string): void {
     } catch { }
 }
 
-function promptKey(message: string): Promise<string> {
+function clearStoredKey(): void {
+    try { if (existsSync(KEY_FILE)) unlinkSync(KEY_FILE); } catch { }
+}
+
+function promptKey(message: string, question = '[recorder] Paste your API key (or press Enter to quit): ', label = '[limit]  '): Promise<string> {
     return new Promise((resolveP) => {
         const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
         console.log('');
-        console.log(`[limit]   ${message}`);
-        rl.question('[recorder] Paste your API key (or press Enter to quit): ', (answer) => {
+        console.log(`${label} ${message}`);
+        let answered = false;
+        rl.on('close', () => { if (!answered) resolveP(''); });
+        rl.question(question, (answer) => {
+            answered = true;
             rl.close();
             resolveP((answer || '').trim());
         });
@@ -82,8 +89,9 @@ Examples:
 async function main() {
     const args = parseArgs(process.argv);
     if (!args.username) { help(); process.exit(1); }
-    let apiKey = args.apiKey || process.env.TIKTOOL_API_KEY || loadStoredKey();
-    if (apiKey && !args.apiKey) {
+    const storedKey = loadStoredKey();
+    let apiKey = args.apiKey || process.env.TIKTOOL_API_KEY || storedKey;
+    if (apiKey && !args.apiKey && apiKey === storedKey) {
         console.log(`[recorder] using stored API key from ${KEY_FILE}`);
     }
     if (args.apiKey) saveKey(args.apiKey);
@@ -111,6 +119,25 @@ async function main() {
             if (e instanceof FfmpegMissingError) {
                 console.error('[recorder] ffmpeg is missing. Install it from https://ffmpeg.org/download.html');
                 process.exit(3);
+            }
+            if (e instanceof ApiKeyRejectedError) {
+                const fromEnv = !!process.env.TIKTOOL_API_KEY && apiKey === process.env.TIKTOOL_API_KEY;
+                const newKey = await promptKey(
+                    e.message + (fromEnv ? ' (key comes from the TIKTOOL_API_KEY environment variable)' : ''),
+                    '[recorder] Paste a valid API key, or press Enter to continue without a key: ',
+                    '[recorder]',
+                );
+                if (newKey) {
+                    apiKey = newKey;
+                    saveKey(newKey);
+                    console.log(`[recorder] API key saved to ${KEY_FILE}`);
+                } else {
+                    apiKey = '';
+                    delete process.env.TIKTOOL_API_KEY;
+                    clearStoredKey();
+                    console.log('[recorder] continuing without an API key.');
+                }
+                continue;
             }
             if (isRateLimit(e)) {
                 const newKey = await promptKey(e?.message || 'Anonymous limit reached. Get an API key at https://tik.tools/pricing to lift the cap (7-day free evaluation).');

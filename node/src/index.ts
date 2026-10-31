@@ -14,7 +14,7 @@
  */
 
 import { spawn, ChildProcess } from 'child_process';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, statSync } from 'fs';
 import { dirname, resolve } from 'path';
 
 const STREAM_URL_ENDPOINT = 'https://api.tik.tools/webcast/room_video';
@@ -77,6 +77,14 @@ export class StreamOfflineError extends Error {
     }
 }
 
+/** Recorder error thrown when the server rejects the API key that was sent. */
+export class ApiKeyRejectedError extends Error {
+    constructor(public reason: string) {
+        super(`API key rejected: ${reason}`);
+        this.name = 'ApiKeyRejectedError';
+    }
+}
+
 /** Recorder error thrown when ffmpeg is missing on PATH. */
 export class FfmpegMissingError extends Error {
     constructor() {
@@ -120,11 +128,16 @@ export class TikTokLiveRecorder {
             headers,
             body: JSON.stringify({ unique_id: this.uniqueId }),
         });
-        if (res.status === 429) {
-            const body = await res.json().catch(() => null) as any;
-            throw new Error(body?.error || 'Anonymous rate-limit reached. Get an API key at https://tik.tools/pricing to lift the cap (7-day free evaluation).');
+        if (!res.ok) {
+            const errBody = await res.json().catch(() => null) as any;
+            const serverMsg: string | undefined = errBody?.error;
+            if (res.status === 429) {
+                throw new Error(serverMsg || 'Anonymous rate-limit reached. Get an API key at https://tik.tools/pricing to lift the cap (7-day free evaluation).');
+            }
+            if (res.status === 404) return { live: false, uniqueId: this.uniqueId, hls: {}, flv: {} };
+            if ((res.status === 401 || res.status === 403) && this.apiKey) throw new ApiKeyRejectedError(serverMsg || `HTTP ${res.status}`);
+            throw new Error(`stream_url failed: HTTP ${res.status}${serverMsg ? ` (${serverMsg})` : ''}`);
         }
-        if (!res.ok) throw new Error(`stream_url failed: HTTP ${res.status}`);
         const body = (await res.json()) as any;
         if (body && body.status_code === -1 && body.error) throw new Error(`stream_url: ${body.error}`);
 
@@ -172,6 +185,7 @@ export class TikTokLiveRecorder {
         const args = buildFfmpegArgs(inputUrl, outFile, container);
         if (options.verbose) args.unshift('-stats');
 
+        const before = fileStamp(outFile);
         const startedAt = Date.now();
         let child: ChildProcess | null = null;
 
@@ -185,7 +199,8 @@ export class TikTokLiveRecorder {
 
         const promise = new Promise<{ outFile: string; durationSec: number }>((resolveP, rejectP) => {
             try {
-                child = spawn(ffmpeg, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+                // Undrained pipes fill up on long recordings and stall ffmpeg.
+                child = spawn(ffmpeg, args, { stdio: ['pipe', 'ignore', options.verbose ? 'pipe' : 'ignore'] });
             } catch (e: any) {
                 if (e?.code === 'ENOENT') return rejectP(new FfmpegMissingError());
                 return rejectP(e);
@@ -201,7 +216,10 @@ export class TikTokLiveRecorder {
                 if (e?.code === 'ENOENT') rejectP(new FfmpegMissingError());
                 else rejectP(e);
             });
-            proc.on('close', () => {
+            proc.on('close', (code) => {
+                if (code !== 0 && code !== null && !wroteMedia(outFile, before)) {
+                    return rejectP(new Error(`ffmpeg exited with code ${code} before recording any media (enable verbose output to see the ffmpeg error).`));
+                }
                 options.onSegmentEnd?.(outFile);
                 resolveP({ outFile, durationSec: Math.round((Date.now() - startedAt) / 1000) });
             });
@@ -220,14 +238,29 @@ export class TikTokLiveRecorder {
 
 function pickInput(sources: StreamSources, preferred: Quality): string | null {
     const order: string[] = [preferred, 'origin', 'FULL_HD1', 'HD1', 'hd', 'SD1', 'ld', 'SD2', 'ao', 'default'];
+    // FLV first: it is the primary pull format and stays reachable when the
+    // HLS edge for a stream does not answer.
     for (const q of order) {
-        if (sources.hls?.[q]) return sources.hls[q];
         if (sources.flv?.[q]) return sources.flv[q];
+        if (sources.hls?.[q]) return sources.hls[q];
     }
-    const anyHls = sources.hls ? Object.values(sources.hls).find(Boolean) : undefined;
-    if (anyHls) return anyHls;
     const anyFlv = sources.flv ? Object.values(sources.flv).find(Boolean) : undefined;
-    return anyFlv ?? null;
+    if (anyFlv) return anyFlv;
+    const anyHls = sources.hls ? Object.values(sources.hls).find(Boolean) : undefined;
+    return anyHls ?? null;
+}
+
+// Container headers alone are about 1-2 KB; anything below this holds no media.
+const MIN_MEDIA_BYTES = 16 * 1024;
+
+function fileStamp(path: string): string | null {
+    try { const st = statSync(path); return `${st.size}:${st.mtimeMs}`; } catch { return null; }
+}
+
+function wroteMedia(path: string, before: string | null): boolean {
+    const after = fileStamp(path);
+    if (after === null || after === before) return false;
+    try { return statSync(path).size >= MIN_MEDIA_BYTES; } catch { return false; }
 }
 
 function buildFfmpegArgs(input: string, outFile: string, container: Container): string[] {
@@ -236,7 +269,9 @@ function buildFfmpegArgs(input: string, outFile: string, container: Container): 
         // Remux only - keep original codecs.
         base.push('-c', 'copy', outFile);
     } else if (container === 'mp4') {
-        base.push('-c', 'copy', '-bsf:a', 'aac_adtstoasc', '-movflags', '+faststart', outFile);
+        // Fragmented MP4 writes its index up front, so the file stays playable
+        // even when ffmpeg is killed (window closed, crash, power loss).
+        base.push('-c', 'copy', '-bsf:a', 'aac_adtstoasc', '-movflags', '+frag_keyframe+empty_moov+default_base_moof', outFile);
     } else {
         base.push('-c', 'copy', outFile);
     }

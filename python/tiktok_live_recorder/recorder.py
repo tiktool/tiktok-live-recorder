@@ -49,6 +49,14 @@ class StreamOfflineError(RuntimeError):
         self.unique_id = unique_id
 
 
+class ApiKeyRejectedError(RuntimeError):
+    """Raised when the server rejects the API key that was sent."""
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(f"API key rejected: {reason}")
+        self.reason = reason
+
+
 class FfmpegMissingError(RuntimeError):
     """Raised when no ``ffmpeg`` binary is found on PATH."""
 
@@ -103,13 +111,19 @@ class TikTokLiveRecorder:
             with urllib.request.urlopen(req, timeout=15) as r:
                 body = json.loads(r.read())
         except urllib.error.HTTPError as e:
+            try:
+                err_body = json.loads(e.read())
+            except (ValueError, OSError):
+                err_body = {}
+            server_msg = err_body.get("error") if isinstance(err_body, dict) else None
             if e.code == 429:
-                try:
-                    err_body = json.loads(e.read())
-                    raise RuntimeError(err_body.get("error") or "Rate-limit reached, retry shortly.") from e
-                except (json.JSONDecodeError, AttributeError):
-                    pass
-            raise RuntimeError(f"stream_url failed: HTTP {e.code}") from e
+                raise RuntimeError(server_msg or "Rate-limit reached, retry shortly.") from e
+            if e.code == 404:
+                return StreamSources(live=False, unique_id=self.unique_id)
+            if e.code in (401, 403) and self.api_key:
+                raise ApiKeyRejectedError(server_msg or f"HTTP {e.code}") from e
+            detail = f" ({server_msg})" if server_msg else ""
+            raise RuntimeError(f"stream_url failed: HTTP {e.code}{detail}") from e
         except (urllib.error.URLError, OSError) as e:
             raise RuntimeError(f"stream_url unreachable: {e}") from e
 
@@ -179,6 +193,7 @@ class TikTokLiveRecorder:
         if verbose:
             args.insert(1, "-stats")
 
+        before = _file_stamp(out_file)
         started = time.time()
 
         if on_segment_start:
@@ -225,6 +240,11 @@ class TikTokLiveRecorder:
                 pass
 
         duration = int(time.time() - started)
+        if proc.returncode not in (0, None) and not _wrote_media(out_file, before):
+            raise RuntimeError(
+                f"ffmpeg exited with code {proc.returncode} before recording any media "
+                "(enable verbose output to see the ffmpeg error)."
+            )
         if on_segment_end:
             try: on_segment_end(out_file)
             except Exception: logger.exception("on_segment_end raised")
@@ -237,18 +257,37 @@ class TikTokLiveRecorder:
 
 def _pick_input(sources: StreamSources, preferred: Quality) -> Optional[str]:
     order = [preferred, "origin", "FULL_HD1", "HD1", "hd", "SD1", "ld", "SD2", "ao", "default"]
+    # FLV first: it is the primary pull format and stays reachable when the
+    # HLS edge for a stream does not answer.
     for q in order:
-        if q in sources.hls and sources.hls[q]:
-            return sources.hls[q]
         if q in sources.flv and sources.flv[q]:
             return sources.flv[q]
-    for v in sources.hls.values():
-        if v:
-            return v
+        if q in sources.hls and sources.hls[q]:
+            return sources.hls[q]
     for v in sources.flv.values():
         if v:
             return v
+    for v in sources.hls.values():
+        if v:
+            return v
     return None
+
+
+# Container headers alone are about 1-2 KB; anything below this holds no media.
+_MIN_MEDIA_BYTES = 16 * 1024
+
+
+def _file_stamp(path: str) -> Optional[tuple[int, int]]:
+    try:
+        st = os.stat(path)
+        return (st.st_size, st.st_mtime_ns)
+    except OSError:
+        return None
+
+
+def _wrote_media(path: str, before: Optional[tuple[int, int]]) -> bool:
+    after = _file_stamp(path)
+    return after is not None and after != before and after[0] >= _MIN_MEDIA_BYTES
 
 
 def _build_ffmpeg_args(ffmpeg_path: str, input_url: str, out_file: str, container: Container) -> list[str]:
@@ -256,7 +295,10 @@ def _build_ffmpeg_args(ffmpeg_path: str, input_url: str, out_file: str, containe
     if container in ("flv", "ts"):
         base += ["-c", "copy", out_file]
     elif container == "mp4":
-        base += ["-c", "copy", "-bsf:a", "aac_adtstoasc", "-movflags", "+faststart", out_file]
+        # Fragmented MP4 writes its index up front, so the file stays playable
+        # even when ffmpeg is killed (window closed, crash, power loss).
+        base += ["-c", "copy", "-bsf:a", "aac_adtstoasc",
+                 "-movflags", "+frag_keyframe+empty_moov+default_base_moof", out_file]
     else:
         base += ["-c", "copy", out_file]
     return base

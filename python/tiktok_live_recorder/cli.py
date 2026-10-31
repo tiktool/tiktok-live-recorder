@@ -11,6 +11,7 @@ from typing import Optional
 from .recorder import (
     TikTokLiveRecorder,
     StreamOfflineError,
+    ApiKeyRejectedError,
     FfmpegMissingError,
 )
 
@@ -27,6 +28,15 @@ def _load_stored_key() -> str:
     return ""
 
 
+def _clear_stored_key() -> None:
+    try:
+        KEY_FILE.unlink()
+    except FileNotFoundError:
+        pass
+    except Exception:
+        pass
+
+
 def _save_key(key: str) -> None:
     try:
         CONFIG_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -37,6 +47,13 @@ def _save_key(key: str) -> None:
             pass
     except Exception:
         pass
+
+
+def _ask(prompt: str) -> str:
+    try:
+        return input(prompt).strip()
+    except EOFError:
+        return ""
 
 
 def _parse_args(argv: Optional[list[str]]) -> argparse.Namespace:
@@ -91,6 +108,22 @@ def main(argv: Optional[list[str]] = None) -> int:
         except StreamOfflineError as e:
             print(f"[recorder] @{e.unique_id} is not currently live.", file=sys.stderr)
             return 2
+        except ApiKeyRejectedError as e:
+            print("")
+            print(f"[recorder] {e}", file=sys.stderr)
+            if not api_key and os.environ.get("TIKTOOL_API_KEY"):
+                print("[recorder] the key comes from the TIKTOOL_API_KEY environment variable.", file=sys.stderr)
+            new_key = _ask("[recorder] Paste a valid API key, or press Enter to continue without a key: ")
+            if new_key:
+                api_key = new_key
+                _save_key(new_key)
+                print(f"[recorder] API key saved to {KEY_FILE}")
+            else:
+                api_key = ""
+                os.environ.pop("TIKTOOL_API_KEY", None)
+                _clear_stored_key()
+                print("[recorder] continuing without an API key.")
+            continue
         except FfmpegMissingError:
             print("[recorder] ffmpeg is missing. Install it from https://ffmpeg.org/download.html",
                   file=sys.stderr)
@@ -99,7 +132,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             if _is_rate_limit(str(e)):
                 print("")
                 print(f"[limit]   {e}", file=sys.stderr)
-                new_key = input("[recorder] Paste your API key (or press Enter to quit): ").strip()
+                new_key = _ask("[recorder] Paste your API key (or press Enter to quit): ")
                 if not new_key:
                     print("[recorder] no key entered. Exiting.")
                     return 0

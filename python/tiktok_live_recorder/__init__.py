@@ -18,10 +18,11 @@ from .recorder import (
     Quality,
     Container,
     StreamOfflineError,
+    ApiKeyRejectedError,
     FfmpegMissingError,
 )
 
-__version__ = "1.0.5"
+__version__ = "1.0.6"
 
 __all__ = [
     "TikTokLiveRecorder",
@@ -29,6 +30,7 @@ __all__ = [
     "Quality",
     "Container",
     "StreamOfflineError",
+    "ApiKeyRejectedError",
     "FfmpegMissingError",
     "__version__",
 ]
